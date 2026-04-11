@@ -1,0 +1,8 @@
+.DS_Store
+__init__.py
+OLD/
+__pycache__/
+*.DS_Store
+/.DS_Store
+*DS_Store
+.DS_Store
