@@ -12,7 +12,7 @@ The present purpose of the code is:
 
 ### Downsampling
 
-The algorithm used to downsample is the Ramer--Douglas--Peucker algorithm.
+The algorithm used to downsample is the Ramer---Douglas---Peucker algorithm.
 See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) or an [example demo](https://cartography-playground.gitlab.io/playgrounds/douglas-peucker-algorithm/).
 To summarise, the algorithm works by:
 - Fix an error parameter $$\varepsilon$$
@@ -74,6 +74,5 @@ The code is easily modifiable to apply to any desired function $$f: R^2 \to R$$,
     \end{axis}
 \end{tikzpicture}
 \end{document}
-
 ```
 
