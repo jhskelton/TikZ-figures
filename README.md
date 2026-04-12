@@ -25,7 +25,9 @@ To summarise, the algorithm works by:
 - If there are no points with $$d>\varepsilon$$: return `[start, end]`
 - Else: 
 	- Split the curve into `C1=[start,...,mid]` and `C2=[mid,...,end]`, and repeat recursively!
-	- Glue together the resultant curves (remove one `mid`). Return `RDP(C1)[:] + RDP(C2)[1:]`
+	- Glue together the resultant curves (remove one `mid`), and return
+
+<!--Return `RDP(C1)[:] + RDP(C2)[1:]`-->
 
 
 #### Some applications
