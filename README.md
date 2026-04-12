@@ -16,7 +16,7 @@ Vector graphics with many vertices are computationally expensive, slow down rend
 
 
 The algorithm implemented to downsample is the Ramer–Douglas–Peucker algorithm.
-See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) or an [example demo](https://cartography-playground.gitlab.io/playgrounds/douglas-peucker-algorithm/). See <a href="RDP algo">below</a> for a brief explanation.
+See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) or an [example demo](https://cartography-playground.gitlab.io/playgrounds/douglas-peucker-algorithm/). See [below](#rdp-algorithm) for a brief explanation.
 
 
 
@@ -88,7 +88,7 @@ The code is easily modifiable to apply to any desired function $$f: R^2 \to R$$,
 ### Algorithms
 
 
-<h5 id="RDP algo">RDP Downsampling</h5>
+##### RDP Algorithm
 
 To summarise, the algorithm works by:
 - Fix an error parameter $$\varepsilon$$
