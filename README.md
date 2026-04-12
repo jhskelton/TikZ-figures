@@ -20,18 +20,18 @@ See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peuc
 To summarise, the algorithm works by:
 - Fix an error parameter $$\varepsilon$$
 - Take a `start` and `end` point, imagine a line connecting them
-- Compute the perpendicular distance $$d$$ from the line to all other points, one by one.
-- Find the (first) point with the greatest distance, call this `mid`.
+- Compute the perpendicular distance $$d$$ from the line to all other points, one by one
+- Find the (first) point with the greatest distance, call this `mid`
 - If there are no points with $$d>\varepsilon$$: return `[start, end]`
 - Else: 
 	- Split the curve into `C1=[start,...,mid]` and `C2=[mid,...,end]`, and repeat recursively!
-	- Finally, glue together the resultant curves (remove one of the `mid`s).
+	- Glue together the resultant curves (remove one `mid`) and return `C1[:]+C2[1:]`
 
 
 #### Some applications
 
 This code could be used to, for example,
-- Take a high quality solution curve to an ODE (e.g. chaotic), and then downsample to one that is visually the same.
+- Take a high quality solution curve to an ODE (e.g. chaotic), and then downsample to one visually the same.
 - Compute high quality contour curves, and then downsample.
 
 If you have any other ideas or suggestions, please contact me.
