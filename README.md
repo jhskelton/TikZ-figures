@@ -16,18 +16,8 @@ Vector graphics with many vertices are computationally expensive, slow down rend
 
 
 The algorithm implemented to downsample is the Ramer–Douglas–Peucker algorithm.
-See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) or an [example demo](https://cartography-playground.gitlab.io/playgrounds/douglas-peucker-algorithm/).
-To summarise, the algorithm works by:
-- Fix an error parameter $$\varepsilon$$
-- Take a `start` and `end` point, imagine a line connecting them
-- Compute the perpendicular distance $$d$$ from the line to all other points, one by one
-- Find the (first) point with the greatest distance, call this `mid`
-- If there are no points with $$d>\varepsilon$$: return `[start, end]`
-- Else: 
-	- Split the curve into `C1=[start,...,mid]` and `C2=[mid,...,end]`, and repeat recursively!
-	- Glue together the resultant curves (remove one `mid`), and return
+See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) or an [example demo](https://cartography-playground.gitlab.io/playgrounds/douglas-peucker-algorithm/). See <a href="RDP algo">below</a> for a brief explanation.
 
-<!--Return `RDP(C1)[:] + RDP(C2)[1:]`-->
 
 
 #### Some applications
@@ -88,3 +78,27 @@ The code is easily modifiable to apply to any desired function $$f: R^2 \to R$$,
 #### Other ideas
 
 - Suppose we know that a polygon $$P$$ represents a smooth curve.  We could interpolate $$P$$ using splines, and then 'downsample' the splines.  We should be able to find points that match the error tolerance.  But this would require a root finding algorithm.
+
+
+
+
+
+<hr/>
+
+### Algorithms
+
+
+<h5 id="RDP algo">RDP Downsampling</h5>
+
+To summarise, the algorithm works by:
+- Fix an error parameter $$\varepsilon$$
+- Take a `start` and `end` point, imagine a line connecting them
+- Compute the perpendicular distance $$d$$ from the line to all other points, one by one
+- Find the (first) point with the greatest distance, call this `mid`
+- If there are no points with $$d>\varepsilon$$: return `[start, end]`
+- Else: 
+	- Split the curve into `C1=[start,...,mid]` and `C2=[mid,...,end]`, and repeat recursively!
+	- Glue together the resultant curves (remove one `mid`), and return
+
+
+<!--Return `RDP(C1)[:] + RDP(C2)[1:]`-->
