@@ -12,7 +12,10 @@ The present purpose of the code is:
 
 ### Downsampling
 
-The algorithm used to downsample is the Ramer---Douglas---Peucker algorithm.
+Vector graphics with many vertices are computationally expensive, slow down rendering, and cannot be processed with TikZ easily.  Instead, we can approximate the original shape by one with less vertices.  One method is to downsample and remove vertices.
+
+
+The algorithm implemented to downsample is the Ramer–Douglas–Peucker algorithm.
 See [wikipedia](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) or an [example demo](https://cartography-playground.gitlab.io/playgrounds/douglas-peucker-algorithm/).
 To summarise, the algorithm works by:
 - Fix an error parameter $$\varepsilon$$
@@ -76,3 +79,8 @@ The code is easily modifiable to apply to any desired function $$f: R^2 \to R$$,
 \end{document}
 ```
 
+
+
+#### Other ideas
+
+- Suppose we know that a polygon $$P$$ represents a smooth curve.  We could interpolate $$P$$ using splines, and then 'downsample' the slines.  We should be able to find points that match the error tolerance.  But this would require a root finding algorithm.
