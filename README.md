@@ -23,7 +23,9 @@ To summarise, the algorithm works by:
 - Compute the perpendicular distance $$d$$ from the line to all other points, one by one.
 - Find the (first) point with the greatest distance, call this `mid`.
 - If there are no points with $$d>\varepsilon$$: return `[start, end]`
-- Else: split the curve into `[start,...,mid]` and `[mid,...,end]`, and repeat recursively!
+- Else: 
+	- Split the curve into `C1=[start,...,mid]` and `C2=[mid,...,end]`, and repeat recursively!
+	- Finally, glue together the resultant curves (remove one of the `mid`s).
 
 
 #### Some applications
@@ -83,4 +85,4 @@ The code is easily modifiable to apply to any desired function $$f: R^2 \to R$$,
 
 #### Other ideas
 
-- Suppose we know that a polygon $$P$$ represents a smooth curve.  We could interpolate $$P$$ using splines, and then 'downsample' the slines.  We should be able to find points that match the error tolerance.  But this would require a root finding algorithm.
+- Suppose we know that a polygon $$P$$ represents a smooth curve.  We could interpolate $$P$$ using splines, and then 'downsample' the splines.  We should be able to find points that match the error tolerance.  But this would require a root finding algorithm.
