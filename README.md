@@ -102,3 +102,14 @@ To summarise, the algorithm works by:
 
 
 <!--Return `RDP(C1)[:] + RDP(C2)[1:]`-->
+
+
+
+
+
+<hr/>
+
+
+## Preimage of Functions
+
+In the `solve_fR2.py` file, there is an function/algorithm to solve for the preimage of functions $$f:R^2\to R^2$$
