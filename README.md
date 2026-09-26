@@ -112,4 +112,6 @@ To summarise, the algorithm works by:
 
 ## Preimage of Functions
 
-In the `solve_fR2.py` file, there is an function/algorithm to solve for the preimage of functions $$f:R^2\to R^2$$
+In the `solve_fR2.py` file, there is a function/algorithm to solve for the preimage of functions $$f:R^2\to R^2$$.
+The preimage (level set) of a multivariable function $$f:R^2\to R$$ is just a collection of curves (1 dimensional).
+And so the preimage of $$f:R^2\to R^2$$ is generically just a collection of isolated points.
