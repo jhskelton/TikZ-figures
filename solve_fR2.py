@@ -14,67 +14,39 @@ def pointwise_eval(x,y,f, ignore_NAN=False):
 	 - 2) either x or y is a vector, the other must be a scalar.
 	 - 3) both are matrices (of equal shapes)
 	"""
+
+
+	x_is_arr = isinstance(x, np.ndarray)
+	y_is_arr = isinstance(y, np.ndarray)
+
+	fnc = lambda x,y: np.nan if ignore_NAN and np.isnan(x) or np.isnan(y) else f(x,y)
+
+
+	# check shapes and sizes
+
+	if not x_is_arr and not y_is_arr:
+		# just 2 numbers
+		return fnc(x,y)
+
+
+	elif x_is_arr and y_is_arr:
+		if x.shape != y.shape: 
+			raise ValueError("Shape of input array are not equal. x.shape={0}  y.shape={1}".format(x.shape,y.shape))
+
+		# check if both are matrices
+		if x.ndim != 2:
+			raise ValueError(f"Must be 2d Matrices: x.shape={x.shape}  y.shape={y.shape}")
+
+	elif x_is_arr:
+		if x.ndim != 1: raise ValueError("Vector x must be 1d: x.dim={x.dim}")
+	elif y_is_arr:
+		if y.ndim != 1: raise ValueError("Vector y must be 1d: y.dim={y.dim}")
+
+
+	vectorise_fnc = np.vectorize(fnc,otypes=[complex])
+
+	return vectorise_fnc(x,y)
 	
-	def f_(X,Y, ignore_NAN=ignore_NAN):
-
-		if ignore_NAN:
-			if np.isnan(X) and np.isnan(Y):
-				return np.nan
-		# otherwise
-		return f(X,Y)
-
-
-	x_is_np_array = type(x) == type(np.array([0]))
-	y_is_np_array = type(y) == type(np.array([0]))
-
-	if x_is_np_array or y_is_np_array:
-		shape = None
-
-		if x_is_np_array and not y_is_np_array:    shape = x.shape
-		elif not x_is_np_array and y_is_np_array:  shape = y.shape
-		else:
-			### if both inputs are arrays: check if the shapes are the same
-			# if they are not: raise value error
-
-			if x.shape != y.shape: raise ValueError("Shape of input array are not equal. x.shape={0}  y.shape={1}".format(x.shape,y.shape))
-			else:
-				shape = x.shape
-
-		# format output
-		z = np.zeros(shape, dtype=complex)
-
-		if x_is_np_array and not y_is_np_array:
-			# check if x is a 1-dimensional array
-			if x.ndim != 1: raise ValueError("Incompatible objects: x={0}  y={1}".format(x,y))
-
-			for i in range(0, len(x)):
-				z[i] = f_(x[i],y)
-
-		elif not x_is_np_array and y_is_np_array:
-			# check if y is a 1-dimensional array
-			if y.ndim != 1: raise ValueError("Incompatible objects: x={0}  y={1}".format(x,y))
-
-			for i in range(0, len(y)):
-				z[i] = f_(x,y[i])
-
-		else:
-			# check if both objects are matrices!
-			if x.ndim != 2: raise ValueError("Incomptiable objects, must be matrices: x={0}  y={1}".format(x,y))
-
-			for i in range(0,len(x)):
-				for j in range(0,len(x[i])):
-
-					z[i][j] = f_(x[i][j], y[i][j])
-
-		# output result
-		return z
-
-	else:
-		# x,y are numerical values (not a numpy array - so simplify evaluate)
-		return f_(x,y)
-
-
-		
 
 
 
