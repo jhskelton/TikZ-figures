@@ -89,40 +89,81 @@ def get_bounding_box(X,Y,f,c):
 
 
 
-def solve_multi(xs,ys,f,g,c,eps, sigfig=6):
+def solve_fR2(xs,ys,f,g,c,eps, sigfig=6):
+	"""
+	Input for c can either be a pair of scalars
+	c = [c1,c2]
+	
+	A list of pairs
+	c = [ [c11,c12], [c21,c22], [c31,c32] ]
+
+	Or a matrix
+	c = [ [c11,c12,c13,...,c1n], ..., [cm1,...,cmn] ] 
+	"""
+
 	X,Y = get_xy_mesh(xs,ys,eps)
 
-	# get the bounding boxes
-	X,Y,Zf,containf = get_bounding_box(X,Y,f,c[0])
-	X,Y,Zg,containg = get_bounding_box(X,Y,g,c[1])
+	Zf = np.real( pointwise_eval(X,Y, f) )
+	Zg = np.real( pointwise_eval(X,Y, g) )
 
-	containfg = containf*containg
+	sol_list = None
 
-	def fnc(p):
-		x=p[0]; y=p[1]
-		return( f(x,y)-c[0], g(x,y)-c[1] )
+	def solve_fR2_scalar(c0):
+		# For a given scalar c0, find the set of solutions
+	
+		# get the bounding boxes
+		containf = get_bounding_box(X,Y,Zf,c0[0])
+		containg = get_bounding_box(X,Y,Zg,c0[1])
 
-	sols = set()
+		containfg = containf*containg
 
-	active_indices = np.argwhere(containfg)
-	for i, j in active_indices:
-				
-		# set to be the centre of the box
-		x0 = (X[i,j] + X[i,j+1])/2
-		y0 = (Y[i,j] + Y[i+1,j])/2
-				
-		# run local root finder
-		sol, info, ier, mesg = fsolve(fnc, (x0, y0), full_output=True)
+		def fnc(p):
+			x=p[0]; y=p[1]
+			return( f(x,y)-c0[0], g(x,y)-c0[1] )
 
-		# check if fsolve converged successfully (ier == 1)
-		if ier == 1:
-			# round to avoid duplicates
-			rounded_sol = (round(sol[0], sigfig), round(sol[1], sigfig))
-			sols.add(rounded_sol)
-		else:
-			print("Warning:  Solution failed to converge\n(x0,y0)=({0},{1})".format(x0,y0))
+		sols = set()
 
-	return list(sols)
+		active_indices = np.argwhere(containfg)
+
+		for i, j in active_indices:
+
+		#Nx,Ny = containfg.shape
+		#for i in range(0,Nx):
+		#	for j in range(0,Ny):
+		#		if containfg[i,j]:
+					
+			# set to be the centre of the box
+			x0 = (X[i,j] + X[i,j+1])/2
+			y0 = (Y[i,j] + Y[i+1,j])/2
+					
+			# Run local root finder
+			sol, info, ier, mesg = fsolve(fnc, (x0, y0), full_output=True)
+
+			# Check if fsolve converged successfully (ier == 1)
+			if ier == 1:
+				# Round to avoid duplicates
+				rounded_sol = (round(sol[0], sigfig), round(sol[1], sigfig))
+				sols.add(rounded_sol)
+			else:
+				print("Warning:  Solution failed to converge\nat (x0,y0)=({0},{1})".format(x0,y0))
+
+		return list(sols)
+
+
+	if not isinstance(c, np.ndarray) and not isinstance(c, list) and not isinstance(c, tuple)
+		raise ValueError(f"Constant c needs to be a pair of numbers [c1,c2] or a list of them.\nInstead c={c}")
+
+	if not isinstance(c[0], np.ndarray) and not isinstance(c[0], list) and not isinstance(c[0], tuple):
+		# check if scalar
+		sol_list = solve_f(c)
+
+	else:
+		# assume list of c values
+		sol_list = [ solve_f(c0) for c0 in c ]
+
+	return sol_list
+
+	
 
 
 
