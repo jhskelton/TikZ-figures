@@ -119,6 +119,7 @@ In the `solve_fR2.py` file, there is a function/algorithm to solve for the preim
 The preimage (level set) of a multivariable function $$f:R^2\to R$$ is just a collection of curves (1 dimensional), also known as contour lines.
 And so the preimage of $$f:R^2\to R^2$$ is generically just a collection of isolated points.
 
+The function computes the preimage $$f^{-1}(c)$$.
 The `solve_fR2` function is vectorised.  So the constant $$c$$ can either be pair of real numbers `c=[c1,c2]`, or a list/tuple of pairs of numbers `c=[ [c11,c12], [c21,c22],...]`.
 
 
