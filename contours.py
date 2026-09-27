@@ -44,7 +44,7 @@ def downsample_contour_RDP(CS, eps):
 		Xs = contour[0,:]
 		Ys = contour[1,:]
 
-		RDP_indices = curves.downsample_curve_RDP(Xs,Ys,eps)
+		RDP_indices = curves.downsample_curve_RDP_ind(Xs,Ys,eps)
 
 		### We have now constructed the set of indices!
 		Xs_RDP = [Xs[i] for i in RDP_indices]

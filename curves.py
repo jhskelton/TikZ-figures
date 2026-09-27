@@ -22,7 +22,7 @@ def form_intervals(indices,N):
 
 
 
-def find_turning_points(X):
+def find_turning_points_ind(X):
 	"""
 	Find indices that correspond to turning points of X.
 	Do not include start and end index.
@@ -45,13 +45,14 @@ def find_turning_points(X):
 
 
 
-def downsample_curve_RDP(X,Y,eps):
+def downsample_curve_RDP_ind(X,Y,eps):
 	"""
 	Given a curve X,Y, find the indices to downsample it.
 	"""
 
-	X_turning_pts = find_turning_points(X)
-	Y_turning_pts = find_turning_points(Y)
+	# find the indices that give turning points
+	X_turning_pts = find_turning_points_ind(X)
+	Y_turning_pts = find_turning_points_ind(Y)
 
 	# Construct the intervals of indices ending on each critical point
 	interval_pts = sorted(set( [0] + X_turning_pts + Y_turning_pts + [len(X)-1] ) )
