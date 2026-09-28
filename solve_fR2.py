@@ -150,16 +150,16 @@ def solve_fR2(xs,ys,f,g,c,eps, sigfig=6):
 		return list(sols)
 
 
-	if not isinstance(c, np.ndarray) and not isinstance(c, list) and not isinstance(c, tuple)
+	if not isinstance(c, np.ndarray) and not isinstance(c, list) and not isinstance(c, tuple):
 		raise ValueError(f"Constant c needs to be a pair of numbers [c1,c2] or a list of them.\nInstead c={c}")
 
 	if not isinstance(c[0], np.ndarray) and not isinstance(c[0], list) and not isinstance(c[0], tuple):
 		# check if scalar
-		sol_list = solve_f_scalar(c)
+		sol_list = solve_fR2_scalar(c)
 
 	else:
 		# assume list of c values
-		sol_list = [ solve_f_scalar(c0) for c0 in c ]
+		sol_list = [ solve_fR2_scalar(c0) for c0 in c ]
 
 	return sol_list
 
