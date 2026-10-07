@@ -125,3 +125,8 @@ The `solve_fR2` function is vectorised.  So the constant $$c$$ can either be pai
 
 
 It should be very easy to extend the code to find the preimage (points) of functions $$f:R^n\to R^n$$.
+
+
+
+In `solve_contour.pu`, have function to solve for contour lines of a function $$f:R^2\to R$$.  
+Assume that we already know/can compute the (smooth) partial derivatives $$f_x$$ and $$f_y$$.
