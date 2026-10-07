@@ -128,5 +128,8 @@ It should be very easy to extend the code to find the preimage (points) of funct
 
 
 
-In `solve_contour.pu`, have function to solve for contour lines of a function $$f:R^2\to R$$.  
+#### Contours of Functions
+
+
+In `solve_contour.py`, have function to solve for contour lines of a function $$f:R^2\to R$$.  
 Assume that we already know/can compute the (smooth) partial derivatives $$f_x$$ and $$f_y$$.
