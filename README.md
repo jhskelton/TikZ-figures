@@ -133,3 +133,28 @@ It should be very easy to extend the code to find the preimage (points) of funct
 
 In `solve_contour.py`, have function to solve for contour lines of a function $$f:R^2\to R$$.  
 Assume that we already know/can compute the (smooth) partial derivatives $$f_x$$ and $$f_y$$.
+
+
+
+
+## Creating TikZ/PGF Figures in Python
+
+
+Can use Python Matplotlib's built in library to format and save figures as vector graphics pdfs.  And can then import these files/figures into a LaTeX document.
+Options are as a pdf (pre-compiled) or PGF primatives (to be compiled in LaTeX).
+This means that to edit figures, they have to be remade/re-rendered in python.
+
+
+Or. Can use a third party library tikzplotlib to translate matplotlib rendered figures into TikZ/pgf-plots COMMANDS.
+Parses the matplotlib into latex commands.  So then preamble of latex document decides how to render the figures.
+
+
+#### Questions for me
+
+- How to import a custom .cls file?
+- 
+
+
+## Todos:
+
+-[] In the `find_turning_points_ind` function in `curves.py`, there is a potential issue where if the array has a sequence of constant values that it did not treat it as a max/min point.  I fixed the issue, but currently it returns the first index in the sequence.  I need to decide/make an option as to which index it returns, e.g. the first one or the middle one, etc.  E.g. can make this a float value 0.0=first, 0.5=middle, 1.0=end.
