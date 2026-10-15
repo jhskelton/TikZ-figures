@@ -22,22 +22,45 @@ def form_intervals(indices,N):
 
 
 
-def find_turning_points_ind(X):
+def find_turning_points_ind(X, skip_rpts=True):
 	"""
 	Find indices that correspond to turning points of X.
 	Do not include start and end index.
+
+	if skip_rpts=True, then only include the first index for a sequence of constant values.
 	"""
 
-	indices = []
-	for i in range(1, len(X)-1):
+	lnX = len(X)
 
-		# check if the interval x_{i-1}, x_i, x_{i+1} is monotonic
+	if lnX==2:
+		return []
+
+	indices = []
+	i=1
+	while i < lnX-1:
+
+		# if the prev_element = cur_element or cur_element = next_element
+		# then this may obsfuscate that there exists a local critical point(s)
+		# find the last and next vals that are different
+		i_prev = i-1
+		i_next = i+1
+		while X[i_prev] == X[i] and i_prev>0: i_prev -= 1
+		while X[i_next] == X[i] and i_next<lnX-1: i_next += 1
+
+		# check if the interval x_{i_prev}, x_i, x_{i_next} is monotonic
 		monotonic = False
-		if X[i-1] <= X[i] and X[i] <= X[i+1]:  monotonic = True
-		elif X[i-1] >= X[i] and X[i] >= X[i+1]:  monotonic = True
+		if X[i_prev] < X[i] and X[i] < X[i_next]:  monotonic = True
+		elif X[i_prev] > X[i] and X[i] > X[i_next]:  monotonic = True
 
 		if not monotonic:
+			# add the index, since a local critical pt
 			indices += [i]
+
+		if skip_rpts:
+			# update the i index to be the next element different to X[i]
+			i=i_next
+		else:
+			i+=1
 
 	return indices
 
