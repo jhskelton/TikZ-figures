@@ -80,7 +80,7 @@ def get_bounding_box(X,Y,f,c):
 	BL = B[:-1, 1:]
 	BR = B[1:, 1:]
 
-	# a contour passes through the the cell if the corners are all not true or all note false
+	# a contour passes through the the cell if the corners are all not true or all not false
 	contain = ~( (TL==TR) * (TR==BL) * (BL==BR) )
 
 	return X,Y,Z,contain
