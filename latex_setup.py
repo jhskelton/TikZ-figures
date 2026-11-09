@@ -1,16 +1,19 @@
 """
+OBJECTIVE:
+Setup & format matplotlib plots so that they match/resemble LaTeX TikZ / PGFPlots.
+
 export Matplotlib plots as latex pdf format -->  PGFPLOTS
 
 Some notes:
-
-For markersize, matplotlib measures the diameter, whereas tikz measures the radius
+- For markersize, matplotlib measures the diameter, whereas tikz measures the radius
 
 
 
 Comparison between Matplotlib and TikZ/PGFPlots (defaults)
 
-Matplotlib plot Line Width: 1.5 pt
-PGFPlots   plot Line Width: 0.4 pt
+Plot line width:
+	Matplotlib: 1.5 pt
+	PGFPlots:   0.4 pt (thin)
 """
 
 ###   LATEX PRESETS
@@ -19,22 +22,23 @@ import matplotlib as mpl
 from matplotlib.ticker import StrMethodFormatter, FuncFormatter
 
 import math
-
-
 import os
 import platform
+
+
+### Check the platform, and find the path for the LaTeX binary.
 
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 os.environ["PATH"] += os.pathsep + '/usr/local/texlive/2026/bin/universal-darwin'
 
 
 
-# Exact xcolor core palette definitions
+###   LaTeX colour presets --> xcolor core palette
 LATEX_BLACK = '#000000'
 LATEX_BLACK90 = '#1A1A1A'
 LATEX_BLACK85 = '#262626'
 
-LATEX_DARKGRAY  = '#404040'  # 75% black (This is what you want)
+LATEX_DARKGRAY  = '#404040'  # 75% black
 LATEX_GRAY      = '#808080'  # 50% black
 LATEX_LIGHTGRAY = '#BFBFBF'  # 25% black
 
@@ -50,6 +54,7 @@ LATEX_GREEN = '#00A64F'
 MPL_BLUE = '#1f77b4'
 
 
+###   TikZ line width constants --> units are pts
 TIKZ_ULTRA_THIN = 0.1
 TIKZ_VERY_THIN = 0.2
 TIKZ_THIN = 0.4
@@ -85,7 +90,7 @@ MARKERSIZE = {
 
 
 
-# get dictionary of TikZ/PGFPlots & Matplotlib defaults
+# dictionary of TikZ/PGFPlots & Matplotlib defaults
 
 PGF_DEFAULTS = {
 	# font sizes
@@ -152,6 +157,8 @@ pagewidth = LATEX_FULLWIDTH
 def load_latex_pgf(plotfontsize='normalsize', axeslabelsize='normalsize', titlesize='normalsize', ticksize='normalsize', legendsize='normalsize',
 				plotlinewidth=TIKZ_THIN, axiswidth=TIKZ_THIN, tickwidth=TIKZ_VERY_THIN, legendwidth=TIKZ_THIN):
 	"""
+	Configure Matplotlib global rcParams to output native PGF / PDF
+
 	DEFAULTS:
 	axis line width:  thin
 	tick line width:  very thin
@@ -244,16 +251,8 @@ def float_power(x):
 		return int( math.floor( math.log10(abs(x)) ) )
 
 
+
 ### helper functions
-
-
-def _get_lim_pad(lim, pad, enable_limpad):
-	if not enable_limpad:
-		return lim
-	else:
-		lim_len = lim[1]-lim[0]
-		return [ lim[0] - pad*lim_len, lim[1] + pad*lim_len ]
-
 
 
 def _ignore_zero(value,trim_floats):
@@ -269,7 +268,104 @@ def _ignore_zero(value,trim_floats):
 
 
 
+def cm_to_tex_pt(length):
+	return length * 72.27 / 2.54
 
+
+
+
+def convert_display_to_data(fig,ax, x_len_pt, y_len_pt):
+	"""
+	Convert from units of points (display coordinates) into data coordinates
+
+	Assume that the data coordinates are in pixels.
+
+	Use this as a template:
+	https://matplotlib.org/stable/users/explain/artists/transforms_tutorial.html
+
+	Definition:  1pt = 1/72 of an inch
+	             DPI = pixels per inch
+	             Thus:
+	             pixels = (DPI/72)*pts
+	"""
+	inv = ax.transData.inverted()
+
+	# convert points to pixels --> latex uses its own point system of 72.27
+	x_pxls = (fig.dpi/72.27)*x_len_pt
+	y_pxls = (fig.dpi/72.27)*y_len_pt
+
+	# convert the point & the origin 
+	x,y = inv.transform((x_pxls,y_pxls))
+	x_origin,y_origin = inv.transform((0,0))
+
+	# find the total delta x length
+	return (x - x_origin, y - y_origin)
+
+
+
+
+def convert_data_to_display(fig,ax,dx,dy):
+	"""
+	Convert from units of data to pts
+	"""
+
+	# compute origin and (dx,dy) in units of pixels
+
+	p0 = ax.transData.transform( (0,0) )
+	p1 = ax.transData.transform( (dx,dy) )
+
+	dx_pts = (p1[0]-p0[0]) * (72/fig.dpi)
+	dy_pts = (p1[1]-p0[1]) * (72/fig.dpi)
+
+	return dx_pts, dy_pts
+
+
+
+
+def _adjust_margins(fig, ax, xlim=None,ylim=None, xpad=0.1,ypad=0.1, enable_limpad=False, enable_autoscale=False):
+	"""
+	Adjust the margins on the data box of the figure.
+
+	The function
+	 * sets the limits of the plots (if not None)
+	 * adds optional padding around the limits (default=0.1=10%)
+	 * adds padding (margins) around the data points
+	 * padding for data & limits is the same value, so padding is around the max of the two
+
+	By default, setting the limits disables data padding. 
+	To turn back on padding around data (both axes), set enable_autoscale=True
+	Only need if the limits not None
+	"""
+
+	# define a helper function to determine the padding
+	def _get_lim_pad(lim, pad):
+		if not enable_limpad:
+			return lim
+		else:
+			lim_len = lim[1]-lim[0]
+			return [ lim[0] - pad*lim_len, lim[1] + pad*lim_len ]
+
+	## main function
+
+	# update limits first if they exist  -->  automatically this disables autoscale
+	if xlim is not None:  ax.set_xlim( _get_lim_pad(xlim,xpad) )
+	if ylim is not None:  ax.set_ylim( _get_lim_pad(ylim,ypad) )
+
+	# turn back on autoscale (this allows for margins around the x,y lims)
+	if enable_autoscale:  
+		ax.set_autoscalex_on(True)
+		ax.set_autoscaley_on(True) 
+
+	# set padding % around data points
+	ax.margins(x=xpad, y=ypad)
+
+	return
+
+
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ###  Main functions
@@ -299,31 +395,34 @@ def style_axes_box(fig,ax,xlabel,ylabel, ylabel_pad=6, trim_floats=False,
 	Need to test!!!
 	"""
 
-	# update limits first if they exist  -->  automatically this disables autoscale
-	if xlim is not None:  ax.set_xlim( _get_lim_pad(xlim,xpad, enable_limpad) )
-	if ylim is not None:  ax.set_ylim( _get_lim_pad(ylim,ypad, enable_limpad) )
+	# update the limits, and padding around the data points
+	_adjust_margins(fig, ax, 
+		xlim=xlim,ylim=ylim, 
+		xpad=xpad,ypad=ypad, 
+		enable_limpad=enable_limpad, enable_autoscale=enable_autoscale
+		)
 
-	# turn back on autoscale (this allows for margins around the x,y lims)
-	if enable_autoscale:  
-		ax.set_autoscalex_on(True)
-		ax.set_autoscaley_on(True) 
-
+	#
+	### SPINES
 
 	# Style the structural framework to mimic a PGFPlots axis environment
 	ax.spines[ ['top','right'] ].set_visible(True)
 
-	# Inward ticks & ensure ticks sit on top of the curves by high zorder
-	ax.tick_params(direction='in', which='both', top=True, right=True, zorder=10) 
-
-	# update padding on the axes  -->  set padding xpad% for x, and ypad% for y
-	ax.margins(x=xpad, y=ypad)
-
-	# Add native LaTeX math strings for labels
+	#
+	### AXIS LABELS
 	ax.set_xlabel(xlabel)
 	ax.set_ylabel(ylabel, rotation=0, labelpad=ylabel_pad, verticalalignment='center')
 
+	#
+	### TICKS
+	# inward ticks
+	ax.tick_params(direction='in', which='both', top=True, right=True) #, zorder=10) 
+
+	# Todo --> &ensure ticks sit on top of the curves by high zorder
+
+	# adjust the tick labels
 	if trim_floats:
-		# Apply a dynamic string formatter to strip trailing zeros
+		# dynamic string formatter to strip trailing zeros
 		# {x:g} automatically fstrips unnecessary decimal zeros (general floats)
 		ax.xaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
 		ax.yaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
@@ -355,23 +454,17 @@ def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), 
 
 
 	print("WARNING: Please ensure that the x & y limits are set before configuring centre axis style.\nOR put xlim & ylim as keyword arguments")
-	# Style the structural framework to mimic a PGFPlots axis environment
+	# Style the plt to mimic a PGFPlots axis environment
 
-	# update limits first if they exist  -->  automatically this disables autoscale
-	if xlim is not None:  ax.set_xlim( _get_lim_pad(xlim,xpad, enable_limpad) )
-	if ylim is not None:  ax.set_ylim( _get_lim_pad(ylim,ypad, enable_limpad) )
 
-	# turn back on autoscale (this allows for margins around the x,y lims)
-	if enable_autoscale:
-		ax.set_autoscalex_on(True)
-		ax.set_autoscaley_on(True) 
-
-	# update padding on the axes  -->  set padding xpad% for x, and ypad% for y
-	# this adds padding around the DATA points, not the limits. 
+	# update limits & padding on the axes
+	# the padding is set % around data points (not around the limits)
 	# QUESTION??  What happens when both the margin & the limits are set?
-
-	# set padding % around data points
-	ax.margins(x=xpad, y=ypad)
+	_adjust_margins(fig, ax, 
+		xlim=xlim,ylim=ylim, 
+		xpad=xpad,ypad=ypad, 
+		enable_limpad=enable_limpad, enable_autoscale=enable_autoscale
+		)
 
 	#
 	### SPINES
@@ -392,11 +485,15 @@ def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), 
 	ax.yaxis.set_label_coords(*ylab_pos)
 	ax.xaxis.set_label_coords(*xlab_pos)
 
+	# QUESTION: dont like that I am manually choosing the position of the x,y labels.  Is there a better way to automatically do this?
+
 	#
 	### ARROWS
-
 	# decorate the axes lines with arrow heads
-	draw_arrowheads(fig,ax, top=draw_toparrow, right=draw_rightarrow)
+	#draw_arrowheads(fig,ax, top=draw_toparrow, right=draw_rightarrow)
+
+	# NO....!  Since cannot adjust figure size after drawing arrow heads.  cant do this here....
+	# Since, I like to do adjust_figure_height() after styling the axes...
 
 	#
 	### TICKS
@@ -421,39 +518,12 @@ def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), 
 	return
 
 
-	"""
-	if trim_floats:
-		# apply a dynamic string formatter to strip trailing zeros
-		# {x:g} automatically fstrips unnecessary decimal zeros (general floats)
-		ax.xaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
-		ax.yaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
-	"""
-
-	#xticks = ax.get_xticks()
-	#yticks = ax.get_yticks()
-
-	#ax.set_xticklabels( ["" if t==0 else label.get_text() for t, label in zip(xticks, ax.get_xticklabels())] )
-	#ax.set_yticklabels( ["" if t==0 else label.get_text() for t, label in zip(yticks, ax.get_yticklabels())] )
-	#ax.set_xticklabels( ["" if t=="0"or t=="$0" else t for t in ax.get_xticklabels() ] ) 
-
-
-	"""
-	# Doesnt work
-
-	# 3. Explicitly set tick labels zorder manually across major ticks
-	for tick in ax.xaxis.get_major_ticks() + ax.yaxis.get_major_ticks():
-		tick.tick1line.set_zorder(100)
-		tick.tick2line.set_zorder(100)
-		tick.label1.set_zorder(100)
-		tick.label2.set_zorder(100)
-	"""
-
 
 
 
 def draw_arrowheads(fig,ax, top=True, right=True):
 	"""
-	Try to draw arrow heads on the axes.  Doesnt not work super well yet.
+	Try to draw arrow heads on the axes.  Doesnt work super well yet.
 
 	mutation_scale -> in units of points, default is plot fontsize
 
@@ -470,28 +540,92 @@ def draw_arrowheads(fig,ax, top=True, right=True):
 		ax.get_xaxis_transform() --> y = axes fraction (0,1);  x = data units
 
 		ax.transAxes --> x = axes fraction (0,1);  y = axes fraction (0,1)
+
+
+	NOTE:
+	- if I draw an arrow head at (0,1) [end of the spine] then the spine sticks out past the arrow head as a 'nub'
+	- however can either:
+	   * clip the axes a little short, or
+	   * center the arrow heads at the end of the axis and turn off annotation_clip
 	"""
 
-	xmin, xmax = ax.get_xlim()
-	ymin, ymax = ax.get_ylim()
+	print("WARNING: cannot adjust figure (width,height) after drawing axis arrow heads.\n")
 
 	"""
 	# check the line width of the spines
 	spine_width = ax.spines["bottom"].get_linewidth()
 	"""
 
-	mutation_scale = 9 # units of pts
+	# get the length & width of the arrow heads --- units are pts
+	ARROWHEAD_LENGTH = {
+		"-|>": 0.4,
+		"->":  0.4
+	}
+	ARROWHEAD_WIDTH = {
+		"-|>": 0.2,
+		"->":  0.2
+	}
 
-	# a nub clips through the arrow head --> have to clip the axes a little short
+	mutation_scale = 10.5 # units of pts --> TODO: figure out how to set this value, without hardcoding it!
 
-	# Add dynamic arrows, based on fig size
-	arrow_len = mutation_scale * 0.4
 
-	xdiff, ydiff = convert_display_to_data(fig,ax, arrow_len/2) # <-- convert arrow_len (pts) to x&y data
-	print("WARNING: cannot adjust figure (width,height) after drawing axis arrow heads.\n")
+	### draw the arrows
+
+	# If draw the arrow at the end of the spine, then a nub clips through the arrow head. 
+	# Can:
+	#  - clip the axes a little short, or
+	#  - center the arrow heads at the end of the axis and turn off annotation_clip
+
+	style="-|>"
+	arrow_len = mutation_scale * ARROWHEAD_WIDTH[style]  # get lengths -- units of pts
 
 	# set up the arrow properties
-	arrow_props = dict(arrowstyle="-|>", color=LATEX_BLACK, lw=0, shrinkA=0, shrinkB=0, mutation_scale=mutation_scale)
+	arrow_props = dict(arrowstyle=style, color=LATEX_BLACK, lw=0, shrinkA=0, shrinkB=0, mutation_scale=mutation_scale)
+
+	#
+	### now want to find where to put the centre of the arrow
+	xmin, xmax = ax.get_xlim()
+	ymin, ymax = ax.get_ylim()
+
+	x_ax_len_pts, y_ax_len_pts = convert_data_to_display(fig,ax, xmax-xmin, ymax-ymin)
+
+	# find the length of the arrow head as a ratio of the axis lengths between [0,1]
+	xhead_len = arrow_len/x_ax_len_pts
+	yhead_len = arrow_len/y_ax_len_pts
+
+	# define function to draw the arrow
+	def _draw_arrow( xy, xytext, trans_fnc ):
+		return ax.annotate('', 
+			xy=xy, xycoords=trans_fnc,
+			xytext=xytext, textcoords='offset points',
+			arrowprops=arrow_props, annotation_clip=False
+			)
+
+	if right:
+		_draw_arrow( xy=(1+xhead_len/2, 0), xytext=(-arrow_len, 0), trans_fnc=ax.get_yaxis_transform() )
+
+	if top:
+		_draw_arrow( xy=(0, 1+yhead_len/2), xytext=(0, -arrow_len), trans_fnc=ax.get_xaxis_transform() )
+
+	return
+
+
+		# stop the spine x% short of the max limit
+		#ax.spines["bottom"].set_bounds(xmin, xmax - xdiff)
+		# add arrows to the axes
+		#ax.annotate('', xy=(xmax, 0), xytext=(xmax-xdiff, 0), arrowprops=arrow_props, annotation_clip=False)
+		#_draw_arrow( xy=(xmax, 0), xytext=(xmax-xdiff, 0) )
+		#_draw_arrow( xy=(1, 0), xytext=(-arrow_len, 0), trans_fnc=ax.get_yaxis_transform() )
+
+	
+		#ax.spines["left"].set_bounds(ymin, ymax - ydiff)
+		#_draw_arrow( xy=(0, ymax), xytext=(0, ymax-ydiff) )
+		#_draw_arrow( xy=(0, 1), xytext=(0, -arrow_len), trans_fnc=ax.get_xaxis_transform() )
+
+
+
+	#xdiff, ydiff = convert_display_to_data(fig,ax, arrow_len/2, arrow_len/2) # <-- convert arrow_len (pts) to x&y data
+	
 
 	"""
 	# TODO  !!!
@@ -510,29 +644,6 @@ def draw_arrowheads(fig,ax, top=True, right=True):
 	"""
 
 
-	# define function to draw the arrow
-	def _draw_arrow( xy, xytext, trans_fnc ):
-		return ax.annotate('', 
-			xy=xy, xycoords=trans_fnc,
-			xytext=xytext, textcoords='offset points',
-			arrowprops=arrow_props, annotation_clip=False
-			)
-
-
-	if right:
-		# stop the spine x% short of the max limit
-		ax.spines["bottom"].set_bounds(xmin, xmax - xdiff)
-		# add arrows to the axes
-		#ax.annotate('', xy=(xmax, 0), xytext=(xmax-xdiff, 0), arrowprops=arrow_props, annotation_clip=False)
-		#_draw_arrow( xy=(xmax, 0), xytext=(xmax-xdiff, 0) )
-		_draw_arrow( xy=(1, 0), xytext=(-arrow_len, 0), trans_fnc=ax.get_yaxis_transform() )
-
-	if top:
-		ax.spines["left"].set_bounds(ymin, ymax - ydiff)
-		#_draw_arrow( xy=(0, ymax), xytext=(0, ymax-ydiff) )
-		_draw_arrow( xy=(0, 1), xytext=(0, -arrow_len), trans_fnc=ax.get_xaxis_transform() )
-		
-
 	### QUESTION / TODO:
 	# does this code work if I rescale the axes after I draw the arrow heads?
 
@@ -541,7 +652,7 @@ def draw_arrowheads(fig,ax, top=True, right=True):
 
 	# the arrow head is not the pgf/TikZ one.  How to make them the same?
 
-	return
+	
 
 
 
@@ -680,6 +791,8 @@ def adjust_fig_height(fig,ax,axis_ratio=207/240, type='length'):
 def hide_boundary_ticks(fig,ax, err=1e-3):
 	"""
 	Remove the tick lines if they are at the limits of the x & y axes
+
+	Should execute this function after setting the ticks
 	"""
 
 	# draw canvas to populate tick marks
@@ -755,38 +868,24 @@ def plot_open_pt(ax,x,y,markersize):
 
 
 
-def convert_display_to_data(fig,ax, len_pt):
+
+###   Figure saving
+
+
+def save_pgf_fig(fig, fname, fig_width=None):
 	"""
-	Convert from units of points (display coordinates) into data coordinates
+	Save the figure
 
-	Assume that the data coordinates are in pixels.
-
-	Use this as a template:
-	https://matplotlib.org/stable/users/explain/artists/transforms_tutorial.html
-
-	Definition:  1pt = 1/72 of an inch
-	             DPI = pixels per inch
-	             Thus:
-	             pixels = (DPI/72)*pts
+	Comparison with matpllib defaults:
+	pad_inches=0.1 (in)
 	"""
-	inv = ax.transData.inverted()
 
-	# convert points to pixels --> latex uses its own point system of 72.27
-	pxls = (fig.dpi/72.27)*len_pt
+	### TODO:
+	# if fig_width is not None, then force the figure to have width fig_width (inches)
+	if fig_width is not None:
+		print("Setting figure width in `save_pgf_figure' is not yet implemented.")
 
-	# convert the point & the origin 
-	x,_ = inv.transform((pxls,0))
-	x_origin,_ = inv.transform((0,0))
+	fig.savefig(fname, pad_inches=0.0)
+	print("Saved figure: "+fname)
 
-	# now repeat for y
-	_,y = inv.transform((0,pxls))
-	_,y_origin = inv.transform((0,0))
-
-	# find the total delta x length
-	return (x - x_origin, y - y_origin)
-
-
-
-def cm_to_tex_pt(length):
-	return length * 72.27 / 2.54
-
+	return 1
