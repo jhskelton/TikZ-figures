@@ -16,7 +16,9 @@ PGFPlots   plot Line Width: 0.4 pt
 ###   LATEX PRESETS
 
 import matplotlib as mpl
-from matplotlib.ticker import StrMethodFormatter
+from matplotlib.ticker import StrMethodFormatter, FuncFormatter
+
+import math
 
 
 import os
@@ -83,6 +85,28 @@ MARKERSIZE = {
 
 
 
+# get dictionary of TikZ/PGFPlots & Matplotlib defaults
+
+PGF_DEFAULTS = {
+	# font sizes
+	'plotfontsize': 'normalsize', 
+	'axeslabelsize': 'normalsize', 
+	'titlesize': 'normalsize', 
+	'ticksize': 'normalsize', 
+	'legendsize': 'normalsize',
+	# line widths
+	'plotlinewidth': TIKZ_THIN,
+	'axiswidth': TIKZ_THIN,
+	'tickwidth': TIKZ_VERY_THIN, 
+	'legendwidth': TIKZ_THIN,
+	# axis data
+	'xlim': None,
+	'ylim': None,
+}
+
+
+
+
 ###  Define the fontsizes
 
 fontsize = 12
@@ -108,7 +132,7 @@ LATEX_FONT_SIZES = {
 
 def get_latex_fontsize(name, base=fontsize):
 	if not isinstance(name,str):
-		print("Overwriting LaTeX font size with size={name} font size.")
+		print(f"Overwriting LaTeX font size with size={name} font size.")
 		return name
 	if base not in LATEX_FONT_SIZES:
 		raise ValueError(f"Invalid fontsize.  Must be 10pt, 11pt, or 12pt.  Not {base}pt.")
@@ -126,7 +150,7 @@ pagewidth = LATEX_FULLWIDTH
 
 
 def load_latex_pgf(plotfontsize='normalsize', axeslabelsize='normalsize', titlesize='normalsize', ticksize='normalsize', legendsize='normalsize',
-				linewidth=TIKZ_THIN, axiswidth=TIKZ_THIN, tickwidth=TIKZ_VERY_THIN, legendwidth=TIKZ_THIN):
+				plotlinewidth=TIKZ_THIN, axiswidth=TIKZ_THIN, tickwidth=TIKZ_VERY_THIN, legendwidth=TIKZ_THIN):
 	"""
 	DEFAULTS:
 	axis line width:  thin
@@ -173,13 +197,13 @@ def load_latex_pgf(plotfontsize='normalsize', axeslabelsize='normalsize', titles
 		"legend.handlelength": 1.7,      # Length of legend line samples
 		"patch.linewidth": legendwidth,
 		# set the linewidth
-		"lines.linewidth": linewidth,
+		"lines.linewidth": plotlinewidth,
 	    # latex premable
 	    "pgf.preamble": (
 	        r"\usepackage[utf8]{inputenc}"
 	        r"\usepackage[T1]{fontenc}"
 	        r"\usepackage{pgfplots}"
-	        r"\usepackage{amsmath,pgfplots}"
+	        r"\usepackage{amsmath}"
 	        r"\pgfplotsset{compat=1.18}"
 	        #r"\pgfplotsset{set layers}" # render the layers using matplotlibs zorder
 	    )
@@ -189,9 +213,73 @@ def load_latex_pgf(plotfontsize='normalsize', axeslabelsize='normalsize', titles
 
 
 
+
+
+#~~~~~~~~~~~~~~~~~~~
+
+#####    STYLING FUNCTIONS
+
+
+
+
+# some maths functions
+
+
+def float_power(x):
+	"""
+	For a float x=aeb (= a* 10**b )
+	return b
+
+	FORMULA:
+		log10|x| = b + log10|a|
+		then as 1 <= |a| < 10
+		have 0 <= log10|a| < 1
+		so
+		b = floor( log10|x| )
+
+	"""
+	if x==0:
+		return 0
+	else:
+		return int( math.floor( math.log10(abs(x)) ) )
+
+
+### helper functions
+
+
+def _get_lim_pad(lim, pad, enable_limpad):
+	if not enable_limpad:
+		return lim
+	else:
+		lim_len = lim[1]-lim[0]
+		return [ lim[0] - pad*lim_len, lim[1] + pad*lim_len ]
+
+
+
+def _ignore_zero(value,trim_floats):
+	val = value
+
+	# if value is a float, round it so its not too long
+	if isinstance(val, float):
+		ft_pwr = float_power(val)
+		val = round(value, 5-ft_pwr ) # round value to 6 floating points
+
+	return "" if value==0 else (f"{val:g}" if trim_floats else f"{val}")
+
+
+
+
+
+
+
+###  Main functions
+
+
+
 def style_axes_box(fig,ax,xlabel,ylabel, ylabel_pad=6, trim_floats=False, 
 					xlim=None, ylim=None, xpad=0.1,ypad=0.1, 
-					enable_autoscale=False, enable_limpad=False):
+					enable_autoscale=False, enable_limpad=False
+					):
 	"""
 	Style the matplotlib box to make it resemble a tikz pgfplots box.
 
@@ -203,31 +291,22 @@ def style_axes_box(fig,ax,xlabel,ylabel, ylabel_pad=6, trim_floats=False,
 	xpad=0.1
 	ypad-0.1
 
+	if enable_autoscale=True:
+	- then data & margin overwrites explicit limits.
+
 	TODO:
 	Is there an error with doing set_lim before ax.margin ?  Or vice versa?  Does it matter?
 	Need to test!!!
 	"""
 
-	def get_lim_pad(lim, pad):
-		if not enable_limpad:
-			return lim
-		else:
-			lim_len = lim[1]-lim[0]
-			return [ lim[0] - pad*lim_len, lim[1] + pad*lim_len ]
-
-	
-	#if xlim is not None:  ax.set_xlim( (1+xpad)*np.asarray(xlim) )
-	#if ylim is not None:  ax.set_ylim( (1+ypad)*np.asarray(ylim) )
-
 	# update limits first if they exist  -->  automatically this disables autoscale
-	if xlim is not None:  
-		ax.set_xlim( get_lim_pad(xlim,xpad) )
-
-	if ylim is not None:  
-		ax.set_ylim( get_lim_pad(xlim,ypad) )
+	if xlim is not None:  ax.set_xlim( _get_lim_pad(xlim,xpad, enable_limpad) )
+	if ylim is not None:  ax.set_ylim( _get_lim_pad(ylim,ypad, enable_limpad) )
 
 	# turn back on autoscale (this allows for margins around the x,y lims)
-	if enable_autoscale:  ax.set_autoscalex_on(True); 
+	if enable_autoscale:  
+		ax.set_autoscalex_on(True)
+		ax.set_autoscaley_on(True) 
 
 
 	# Style the structural framework to mimic a PGFPlots axis environment
@@ -253,7 +332,7 @@ def style_axes_box(fig,ax,xlabel,ylabel, ylabel_pad=6, trim_floats=False,
 
 
 def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), trim_floats=False, 
-					xlim=None, ylim=None, xpad=0.05,ypad=0.05, xlabelbottom=True, enable_autoscale=False, enable_limpad=False,
+					xlim=None, ylim=None, xpad=0.1,ypad=0.1, xlabelbottom=True, enable_autoscale=False, enable_limpad=False,
 					draw_toparrow=True, draw_rightarrow=True):
 	"""
 	Style the matplotlib box to make it resemble a tikz pgfplots.
@@ -273,37 +352,39 @@ def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), 
 	Is there an error with doing set_lim before ax.margin ?  Or vice versa?  Does it matter?
 	Need to test!!!
 	"""
-	def get_lim_pad(lim, pad):
-		if not enable_limpad:
-			return lim
-		else:
-			lim_len = lim[1]-lim[0]
-			return [ lim[0] - pad*lim_len, lim[1] + pad*lim_len ]
 
 
-	print("Warning: Please ensure that the x & y limits are set before configuring centre axis style.\nOR put xlim & ylim as keyword arguments")
+	print("WARNING: Please ensure that the x & y limits are set before configuring centre axis style.\nOR put xlim & ylim as keyword arguments")
 	# Style the structural framework to mimic a PGFPlots axis environment
 
 	# update limits first if they exist  -->  automatically this disables autoscale
-	if xlim is not None:  ax.set_xlim( get_lim_pad(xlim,xpad) )
-	if ylim is not None:  ax.set_ylim( get_lim_pad(ylim,ypad) )
+	if xlim is not None:  ax.set_xlim( _get_lim_pad(xlim,xpad, enable_limpad) )
+	if ylim is not None:  ax.set_ylim( _get_lim_pad(ylim,ypad, enable_limpad) )
 
 	# turn back on autoscale (this allows for margins around the x,y lims)
-	if enable_autoscale:  ax.set_autoscalex_on(True); 
-
-
-	# update the spines to make them be centred at zero
-	ax.spines[ ["left","bottom", "top", "right"] ].set_position("zero")
-	# make the top and right spines invisible
-	ax.spines[ ["top", "right"] ].set_visible(False)
-	
-	ax.tick_params(direction='inout', which='both', top=False, right=False)
-	ax.xaxis.set_tick_params(labeltop=not xlabelbottom, labelbottom=xlabelbottom)
+	if enable_autoscale:
+		ax.set_autoscalex_on(True)
+		ax.set_autoscaley_on(True) 
 
 	# update padding on the axes  -->  set padding xpad% for x, and ypad% for y
+	# this adds padding around the DATA points, not the limits. 
+	# QUESTION??  What happens when both the margin & the limits are set?
+
+	# set padding % around data points
 	ax.margins(x=xpad, y=ypad)
 
-	# Add native LaTeX math strings for labels
+	#
+	### SPINES
+
+	# update the spines to make them be centred at zero
+	# make the top and right spines invisible
+	ax.spines[ ["left","bottom", "top", "right"] ].set_position("zero")
+	ax.spines[ ["top", "right"] ].set_visible(False)
+
+	#
+	### AXIS LABELS
+
+	# set axis labels
 	ax.set_xlabel(xlabel, loc="right") # place label at the end of the axis
 	ax.set_ylabel(ylabel, rotation=0)
 
@@ -311,41 +392,49 @@ def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), 
 	ax.yaxis.set_label_coords(*ylab_pos)
 	ax.xaxis.set_label_coords(*xlab_pos)
 
-	"""
-	# TODO  !!!
+	#
+	### ARROWS
 
-	# Set bounds with a slight offset to leave room for arrows
-    x_offset = (xmax - xmin) * 0.05
-    y_offset = (ymax - ymin) * 0.05
-    
-    ax.spines["bottom"].set_bounds(xmin, xmax - x_offset)
-    ax.spines["left"].set_bounds(ymin, ymax - y_offset)
-
-    # Add dynamic arrows to the axis tips based on data span
-    arrow_dx = (xmax - xmin) * 0.1
-    arrow_dy = (ymax - ymin) * 0.1
-
-	"""
-
-	#decorate the axes lines with arrow heads
+	# decorate the axes lines with arrow heads
 	draw_arrowheads(fig,ax, top=draw_toparrow, right=draw_rightarrow)
 
+	#
+	### TICKS
+
+	# remove top&right spine ticks, and make left&right (centred) both in-out
+	# make the x-axis ticks either below or above the x-axis
+	ax.tick_params(direction='inout', which='both', top=False, right=False)
+	ax.xaxis.set_tick_params(labeltop=not xlabelbottom, labelbottom=xlabelbottom)
+
+	# remove the zero labels
+	# create Formatter function to determine tick labels
+	fnc = lambda value,position: _ignore_zero(value, trim_floats)  # --> apply {x:g} to automatically strip 0s from floats
+
+	ax.xaxis.set_major_formatter( FuncFormatter(fnc) )
+	ax.yaxis.set_major_formatter( FuncFormatter(fnc) )
+	print("Axis formatter function set.  Zero marks removed from x and y axes.")
+
+
+	# TODO FIX
+	print("WARNING:  Date, logarithmic, scientific-offset or custom formatters need a wrapper that delegates to the original formatter.")
+
+	return
+
+
+	"""
 	if trim_floats:
-		# Apply a dynamic string formatter to strip trailing zeros
+		# apply a dynamic string formatter to strip trailing zeros
 		# {x:g} automatically fstrips unnecessary decimal zeros (general floats)
 		ax.xaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
 		ax.yaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
+	"""
 
+	#xticks = ax.get_xticks()
+	#yticks = ax.get_yticks()
 
-	# remove the zero labels
-	xticks = ax.get_xticks()
-	yticks = ax.get_yticks()
-
-	ax.set_xticklabels( ["" if t==0 else label.get_text() for t, label in zip(xticks, ax.get_xticklabels())] )
-	ax.set_yticklabels( ["" if t==0 else label.get_text() for t, label in zip(yticks, ax.get_yticklabels())] )
+	#ax.set_xticklabels( ["" if t==0 else label.get_text() for t, label in zip(xticks, ax.get_xticklabels())] )
+	#ax.set_yticklabels( ["" if t==0 else label.get_text() for t, label in zip(yticks, ax.get_yticklabels())] )
 	#ax.set_xticklabels( ["" if t=="0"or t=="$0" else t for t in ax.get_xticklabels() ] ) 
-
-	print("Zero marks removed from x and y axes.")
 
 
 	"""
@@ -361,9 +450,10 @@ def style_axes_centre(fig,ax,xlabel,ylabel, xlab_pos=(1,0.5), ylab_pos=(0.5,1), 
 
 
 
+
 def draw_arrowheads(fig,ax, top=True, right=True):
 	"""
-	Try to draw arrow heads on the axes.  Doesn not work super well yet.
+	Try to draw arrow heads on the axes.  Doesnt not work super well yet.
 
 	mutation_scale -> in units of points, default is plot fontsize
 
@@ -373,6 +463,13 @@ def draw_arrowheads(fig,ax, top=True, right=True):
 	head_length = 0.4
 	head_width = 0.2
 	(in units of pts, scaled by mutation scale)
+
+
+	Draw arrows using matplotlib blended coordinate system:
+		ax.get_yaxis_transform() --> x = axes fraction (0,1);  y = data units
+		ax.get_xaxis_transform() --> y = axes fraction (0,1);  x = data units
+
+		ax.transAxes --> x = axes fraction (0,1);  y = axes fraction (0,1)
 	"""
 
 	xmin, xmax = ax.get_xlim()
@@ -396,16 +493,59 @@ def draw_arrowheads(fig,ax, top=True, right=True):
 	# set up the arrow properties
 	arrow_props = dict(arrowstyle="-|>", color=LATEX_BLACK, lw=0, shrinkA=0, shrinkB=0, mutation_scale=mutation_scale)
 
+	"""
+	# TODO  !!!
+
+	# Set bounds with a slight offset to leave room for arrows
+    x_offset = (xmax - xmin) * 0.05
+    y_offset = (ymax - ymin) * 0.05
+    
+    ax.spines["bottom"].set_bounds(xmin, xmax - x_offset)
+    ax.spines["left"].set_bounds(ymin, ymax - y_offset)
+
+    # Add dynamic arrows to the axis tips based on data span
+    arrow_dx = (xmax - xmin) * 0.1
+    arrow_dy = (ymax - ymin) * 0.1
+
+	"""
+
+
+	# define function to draw the arrow
+	def _draw_arrow( xy, xytext, trans_fnc ):
+		return ax.annotate('', 
+			xy=xy, xycoords=trans_fnc,
+			xytext=xytext, textcoords='offset points',
+			arrowprops=arrow_props, annotation_clip=False
+			)
+
+
 	if right:
 		# stop the spine x% short of the max limit
 		ax.spines["bottom"].set_bounds(xmin, xmax - xdiff)
 		# add arrows to the axes
-		ax.annotate('', xy=(xmax, 0), xytext=(xmax-xdiff, 0), arrowprops=arrow_props)
+		#ax.annotate('', xy=(xmax, 0), xytext=(xmax-xdiff, 0), arrowprops=arrow_props, annotation_clip=False)
+		#_draw_arrow( xy=(xmax, 0), xytext=(xmax-xdiff, 0) )
+		_draw_arrow( xy=(1, 0), xytext=(-arrow_len, 0), trans_fnc=ax.get_yaxis_transform() )
 
 	if top:
 		ax.spines["left"].set_bounds(ymin, ymax - ydiff)
-		ax.annotate('', xy=(0, ymax), xytext=(0, ymax-ydiff),arrowprops=arrow_props)
+		#_draw_arrow( xy=(0, ymax), xytext=(0, ymax-ydiff) )
+		_draw_arrow( xy=(0, 1), xytext=(0, -arrow_len), trans_fnc=ax.get_xaxis_transform() )
+		
 
+	### QUESTION / TODO:
+	# does this code work if I rescale the axes after I draw the arrow heads?
+
+	# I dont like the use of set_bounds on the spines.  It would be nicer to make the arrow head sit right at the edge of the spine
+	# Is there a way to figure out how much the spine pokes through the tip of the arrow head?
+
+	# the arrow head is not the pgf/TikZ one.  How to make them the same?
+
+	return
+
+
+
+	# OLD
 
 	# xy -> controls the position of the tip of the arrow head
 	# xytext relative to xy -> controls the direction of the arrow head
@@ -416,7 +556,6 @@ def draw_arrowheads(fig,ax, top=True, right=True):
 
 	# experimenting with arrows...
 	#ax.text(0, ymin, r'$\downarrow$',fontsize=14, ha='center', va='center', color='black')
-	return
 
 
 
@@ -428,8 +567,9 @@ def adjust_fig_height(fig,ax,axis_ratio=207/240, type='length'):
 	This function sets the axis box to be adjustable rather than data limit.
 	And assumes that the x & y limits have already been set.
 
-	Update the figure height to match a certain ratio, 
-	and do not change the figure width (need to be predifined).
+	Update the figure height so that the axes have a set ratio,
+	and 
+	GOAL: keep the figure width the current one.
 
 	Parameters:
 	- fig: matplotlib Figure
@@ -441,6 +581,8 @@ def adjust_fig_height(fig,ax,axis_ratio=207/240, type='length'):
 
 	Returns:
 	-  the updated figure (width,height)
+
+
 
 	NOTE:
 	- naive option is to do instead:  ax.set_aspect(aspect=axis_ratio, adjustable='box')
@@ -457,7 +599,44 @@ def adjust_fig_height(fig,ax,axis_ratio=207/240, type='length'):
 	- height (\axisdefaultheight): 207pt
 
 	This gives a default axis ratio 207/240
+
+
+
+	Examples:
+
+	* if type=='length':  then the visual ratio of the axis length will be 'axis_ratio', regardless of how small/large the data is.
+
+	* if type=='data':  then a ratio of 2/1 will mean that 1 unit of y-length will be twice the length of 1 unit of x-length.  i.e. it will look stretched out.
+	
+
+
+	Questions/TODOs:
+
+	* Is there a way to simplify this function using ax.set_aspect() [scale based on data] and ax.set_box_aspect() [scale based on length] ?
+	* It seems that if the figure is already drawn or size is already set, then these functions just shrink the plotting box.
+
+
+	Issues to be aware of:
+	- set_aspect and set_box_aspect shrinks the axis box to fit the current figure size.
+	- but want the current width to stay the same
+
+
+	TOOD Steps:
+	1. get original fig width
+	2. use matplotlib to rescale the aspect ratio of x&y axes
+	3. shrink the figure size to tightly fit the new axis box
+	4. rescale the figure size so ratio is preserved & width returns to original width
 	"""
+
+
+	### find the current figure width & height
+
+	# make the axis adjustable
+	ax.set_aspect('auto', adjustable='box')
+
+	fig.canvas.draw()   # draw the figure to force the geometry to be set
+	fig_width, cur_fig_height = fig.get_size_inches()
+
 
 	if type=='length':
 		pass
@@ -466,35 +645,28 @@ def adjust_fig_height(fig,ax,axis_ratio=207/240, type='length'):
 		# find the length of the axis in data units
 		xmin, xmax = ax.get_xlim()
 		ymin, ymax = ax.get_ylim()
-		x_len = xmax-xmin
-		y_len = ymax-ymin
+		x_len = abs(xmax-xmin)
+		y_len = abs(ymax-ymin)
 		data_ratio = y_len/x_len
 		# update the axis ratio
 		axis_ratio = data_ratio * axis_ratio
 
+		# NOTE:  this fails if use logarithmic or non-linear axis scales
+
 	else:
 		raise ValueError(f"Unknown formatting type '{type}'.")
 
-
-	# make the axis adjustable
-	ax.set_aspect('auto', adjustable='box')
-
-	# draw the figure
-	fig.canvas.draw()
-	# find the current width & height
-	fig_width, cur_fig_height = fig.get_size_inches()
-
 	# find the axis position in the figure --> reutrn Bbox object
 	ax_box = ax.get_position()
-	# find the current width of the axis (inches) using the scale of the box width (between 0 & 1)
-	ax_width = ax_box.width * fig_width
 
-	# new height
-	new_ax_height = ax_width * axis_ratio
+	# find the current width of the axis (inches) --> uses scale of the box width (between 0 & 1)
+	ax_width = ax_box.width * fig_width
 
 	# determine the existing padding
 	vpad = cur_fig_height * (1-ax_box.height)
 
+	# get new axes height & add the padding
+	new_ax_height = ax_width * axis_ratio
 	new_fig_height = new_ax_height + vpad
 
 	# reset the figure size
@@ -503,6 +675,57 @@ def adjust_fig_height(fig,ax,axis_ratio=207/240, type='length'):
 
 
 
+
+
+def hide_boundary_ticks(fig,ax, err=1e-3):
+	"""
+	Remove the tick lines if they are at the limits of the x & y axes
+	"""
+
+	# draw canvas to populate tick marks
+	fig.canvas.draw()
+
+	xlim = ax.get_xlim()
+	ylim = ax.get_ylim()
+
+	# enumerate over the tick lines
+	for tick in ax.xaxis.get_major_ticks():
+
+		# check if at bounday & normalise
+		diff1 = abs( (tick.get_loc() - xlim[0]) / (xlim[1]-xlim[0]) )
+		diff2 = abs( (tick.get_loc() - xlim[1]) / (xlim[1]-xlim[0]) )
+
+		if diff1 < err or diff2 < err:
+			# hide bottom/left & top/right lines
+			tick.tick1line.set_visible(False)
+			tick.tick2line.set_visible(False)
+
+	for tick in ax.yaxis.get_major_ticks():
+		# check if at bounday & normalise
+		diff1 = abs( (tick.get_loc() - ylim[0]) / (ylim[1]-ylim[0]) )
+		diff2 = abs( (tick.get_loc() - ylim[1]) / (ylim[1]-ylim[0]) )
+
+		if diff1 < err or diff2 < err:
+			# hide bottom/left & top/right lines
+			tick.tick1line.set_visible(False)
+			tick.tick2line.set_visible(False)
+
+	return 1
+
+
+
+
+"""
+def turn_off_axis(bottom=False, left=False, top=False, right=False):
+	ls = []
+	if bottom: ls.append("bottom")
+	if left: ls.append("left")
+	if top ls.append("top")
+	if right: ls.append("right")
+
+	ax.spines[ ls ].set_visible(False)
+	ax.tick_params(bottom=bottom, left=left, top=top, right=right)
+"""
 
 
 
